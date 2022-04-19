@@ -1,0 +1,17 @@
+{
+  "name": "com.carbonfibergames.vaporkeys",
+  "version": "2.0.0",
+  "displayName": "Vapor Keys",
+  "description": "Simple string and int key generator for enums and dropdowns.",
+  "unity": "2021.2",
+  "keywords": [
+    "Networking",
+    "Client_Server",
+    "UDP"
+  ],
+  "author": {
+    "name": "Carbon Fiber Games LLC"
+  },
+  "hideInEditor": false,
+  "type": "library"
+}
