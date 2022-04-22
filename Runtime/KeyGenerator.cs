@@ -112,6 +112,7 @@ namespace VaporKeys
 
             sb.Append("//\t* THIS SCRIPT IS AUTO-GENERATED *\n");
             sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
+            sb.Append("using System;\n");
             sb.Append("using System.Collections.Generic;\n");
             sb.Append("using System.Linq;\n");
             sb.Append("using System.Reflection;\n\n");
