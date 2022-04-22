@@ -111,7 +111,7 @@ namespace VaporKeys
             
 
             sb.Append("//\t* THIS SCRIPT IS AUTO-GENERATED *\n");
-            sb.Append("using Sirenix.OdinInspector;\n");
+            sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
             sb.Append("using System.Collections.Generic;\n");
             sb.Append("using System.Linq;\n");
             sb.Append("using System.Reflection;\n\n");
@@ -148,6 +148,7 @@ namespace VaporKeys
 
         private static void FormatOdinDropDown(StringBuilder sb, List<KeyValuePair> keys, bool useInternalID)
         {
+            sb.Append("#if ODIN_INSPECTOR\n");
             if (useInternalID)
             {
                 sb.Append($"\t\tpublic static ValueDropdownList<string> DropdownValues = new ValueDropdownList<string>()\n");
@@ -162,6 +163,24 @@ namespace VaporKeys
                 sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", {keys[i].variableName} }},\n");
             }
             sb.Append("\t\t};\n\n");
+            sb.Append("#endif\n");
+
+            sb.Append("#if !ODIN_INSPECTOR\n");
+            if (useInternalID)
+            {
+                sb.Append($"\t\tpublic static List<Tuple<string, string>> DropdownValues = new ()\n");
+            }
+            else
+            {
+                sb.Append($"\t\tpublic static List<Tuple<string, int>> DropdownValues = new ()\n");
+            }
+            sb.Append("\t\t{\n");
+            for (int i = 0; i < keys.Count; i++)
+            {
+                sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", {keys[i].variableName} }},\n");
+            }
+            sb.Append("\t\t};\n\n");
+            sb.Append("#endif\n");
         }
 
         private static void FormatEnumeration(StringBuilder sb, string scriptName, bool useInternalID)
@@ -198,6 +217,7 @@ namespace VaporKeys
 
         private static void FormatLookup(StringBuilder sb, bool useInternalID)
         {
+            sb.Append("#if ODIN_INSPECTOR\n");
             if (useInternalID)
             {
                 sb.Append($"\t\tpublic static string Lookup(string id)\n");
@@ -216,6 +236,28 @@ namespace VaporKeys
 
                 sb.Append("\t\t}\n");
             }
+            sb.Append("#endif\n");
+
+            sb.Append("#if !ODIN_INSPECTOR\n");
+            if (useInternalID)
+            {
+                sb.Append($"\t\tpublic static string Lookup(string id)\n");
+                sb.Append("\t\t{\n");
+
+                sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2 == id).Item1;\n");
+
+                sb.Append("\t\t}\n");
+            }
+            else
+            {
+                sb.Append($"\t\tpublic static string Lookup(int id)\n");
+                sb.Append("\t\t{\n");
+
+                sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2 == id).Item1;\n");
+
+                sb.Append("\t\t}\n");
+            }
+            sb.Append("#endif\n");
         }
         #endregion
     }
