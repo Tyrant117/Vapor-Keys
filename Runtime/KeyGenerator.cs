@@ -178,7 +178,7 @@ namespace VaporKeys
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
             {
-                sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", {keys[i].variableName} }},\n");
+                sb.Append($"\t\t\tnew (\"{keys[i].displayName}\", {keys[i].variableName}),\n");
             }
             sb.Append("\t\t};\n\n");
             sb.Append("#endif\n");

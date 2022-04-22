@@ -1,3 +1,6 @@
+# v1.0.3
+* Tuple list formatting
+
 # v1.0.2
 * using bugfix.
 
