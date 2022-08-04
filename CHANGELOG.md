@@ -1,3 +1,6 @@
+# v1.0.5
+* Formatting bugs
+
 # v1.0.4
 * Generated enums for switch statements
 

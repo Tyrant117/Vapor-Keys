@@ -153,7 +153,7 @@ namespace VaporKeys
             {
                 sb.Append($"\t\t\t{keys[i].variableName} = {keys[i].key},\n");
             }
-            sb.Append("\t\t;\n\n");
+            sb.Append("\t\t}\n\n");
         }
 
         private static void FormatOdinDropDown(StringBuilder sb, List<KeyValuePair> keys, bool useInternalID)
