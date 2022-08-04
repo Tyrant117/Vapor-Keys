@@ -31,14 +31,8 @@ namespace VaporKeys
             public string GetFormat(int placeholderIndex)
             {
                 string vName = variableName.Length > 0 ? variableName : "Placeholder_" + placeholderIndex;
-                if (useInternalID)
-                {
-                    return $"public const string {vName} = \"{internalID}\";";
-                }
-                else
-                {
-                    return $"public const int {vName} = {key};";
-                }
+                return useInternalID ? $"public const string {vName} = \"{internalID}\";"
+                                     : $"public const int {vName} = {key};";
             }
 
             private static string InsertSpaceBeforeUpperCase(string str)
@@ -71,8 +65,8 @@ namespace VaporKeys
 #if UNITY_EDITOR
         public static void GenerateKeys<T>(string[] assetPaths, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID) where T : ScriptableObject, IKey
         {
-            HashSet<int> takenKeys = new HashSet<int>();
-            List<KeyValuePair> formattedKeys = new List<KeyValuePair>();
+            HashSet<int> takenKeys = new();
+            List<KeyValuePair> formattedKeys = new();
 
             foreach (var item in GetAllAssets<T>(assetPaths))
             {
@@ -107,8 +101,8 @@ namespace VaporKeys
             string gameDataProjectFilePath = $"/{gameDataFilepath}/{scriptName}.cs";
             string filepath = Application.dataPath + gameDataProjectFilePath;
 
-            StringBuilder sb = new StringBuilder();
-            
+            StringBuilder sb = new();
+
 
             sb.Append("//\t* THIS SCRIPT IS AUTO-GENERATED *\n");
             sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
@@ -128,6 +122,10 @@ namespace VaporKeys
                 useInternalID = keys[0].useInternalID;
             }
 
+            if (!useInternalID)
+            {
+                FormatEnum(sb, keys);
+            }
             FormatOdinDropDown(sb, keys, useInternalID);
 
             for (int i = 0; i < keys.Count; i++)
@@ -147,6 +145,17 @@ namespace VaporKeys
             System.IO.File.WriteAllText(filepath, sb.ToString());
         }
 
+        private static void FormatEnum(StringBuilder sb, List<KeyValuePair> keys)
+        {
+            sb.Append($"\t\tpublic enum Enum : int\n");
+            sb.Append("\t\t{\n");
+            for (int i = 0; i < keys.Count; i++)
+            {
+                sb.Append($"\t\t\t{keys[i].variableName} = {keys[i].key},\n");
+            }
+            sb.Append("\t\t;\n\n");
+        }
+
         private static void FormatOdinDropDown(StringBuilder sb, List<KeyValuePair> keys, bool useInternalID)
         {
             sb.Append("#if ODIN_INSPECTOR\n");
@@ -163,8 +172,8 @@ namespace VaporKeys
             {
                 sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", {keys[i].variableName} }},\n");
             }
-            sb.Append("\t\t};\n\n");
-            sb.Append("#endif\n");
+            sb.Append("\t\t};\n");
+            sb.Append("#endif\n\n");
 
             sb.Append("#if !ODIN_INSPECTOR\n");
             if (useInternalID)
@@ -180,8 +189,8 @@ namespace VaporKeys
             {
                 sb.Append($"\t\t\tnew (\"{keys[i].displayName}\", {keys[i].variableName}),\n");
             }
-            sb.Append("\t\t};\n\n");
-            sb.Append("#endif\n");
+            sb.Append("\t\t};\n");
+            sb.Append("#endif\n\n");
         }
 
         private static void FormatEnumeration(StringBuilder sb, string scriptName, bool useInternalID)

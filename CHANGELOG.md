@@ -1,3 +1,6 @@
+# v1.0.4
+* Generated enums for switch statements
+
 # v1.0.3
 * Tuple list formatting
 
