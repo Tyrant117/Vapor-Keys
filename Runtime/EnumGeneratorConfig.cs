@@ -31,6 +31,7 @@ namespace VaporKeys
         public ScriptableDefinition loadDefinition;
         private void Load()
         {
+#if UNITY_EDITOR
             folderPath = loadDefinition.folderPath;
             namespaceName = loadDefinition.namespaceName;
             definitionName = loadDefinition.definitionName;
@@ -41,6 +42,7 @@ namespace VaporKeys
             enumContent = new List<string>(loadDefinition.enumContent);
             loadDefinition = null;
             AssetDatabase.Refresh();
+#endif
         }
 
 #if ODIN_INSPECTOR
