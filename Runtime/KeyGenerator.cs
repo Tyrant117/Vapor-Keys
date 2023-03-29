@@ -5,6 +5,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using System;
+using Object = UnityEngine.Object;
+#if ODIN_INSPECTOR
+using Sirenix.OdinInspector;
+#endif
 
 namespace VaporKeys
 {
@@ -62,6 +67,11 @@ namespace VaporKeys
             }
         }
 
+        public static KeyValuePair StringToKeyValuePair(string key, bool useInternalID = false)
+        {
+            return new KeyValuePair(key, key.GetHashCode(), key, useInternalID);
+        }
+
 #if UNITY_EDITOR
         public static void GenerateKeys<T>(string[] assetPaths, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID) where T : ScriptableObject, IKey
         {
@@ -87,6 +97,70 @@ namespace VaporKeys
 
         }
 
+#if ODIN_INSPECTOR
+        public static void AddKey(Type type, string relativePath, ValueDropdownList<int> values, string keyToAdd)
+        {
+            List<KeyValuePair> kvps = new();
+            KeyValuePair newKvp = StringToKeyValuePair(keyToAdd);
+            foreach (var value in values)
+            {
+                if (value.Value == newKvp.key)
+                {
+                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
+                    return;
+                }
+                kvps.Add(new(value.Text, value.Value, value.Text, false));
+            }
+            kvps.Add(newKvp);
+
+            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
+        }
+
+        public static void AddKey(Type type, string relativePath, ValueDropdownList<string> values, string keyToAdd)
+        {
+            List<KeyValuePair> kvps = new();
+            KeyValuePair newKvp = StringToKeyValuePair(keyToAdd, true);
+            foreach (var value in values)
+            {
+                if (value.Value == newKvp.internalID)
+                {
+                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
+                    return;
+                }
+                kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Value, true));
+            }
+            kvps.Add(newKvp);
+
+            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
+        }
+#endif
+
+#if !ODIN_INSPECTOR
+        public static void AddKey(Type type, string relativePath, List<(string, int)> values, string name, int key, string internalID)
+        {
+            List<KeyValuePair> kvps = new();
+            foreach (var value in values)
+            {
+                kvps.Add(new(value.Item1, value.Item2, value.Item1, false));
+            }
+            kvps.Add(new(name, key, internalID, false));
+
+            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
+        }
+
+        public static void AddKey(Type type, string relativePath, List<(string, string)> values, string name, int key, string internalID)
+        {
+            List<KeyValuePair> kvps = new();
+            foreach (var value in values)
+            {
+                kvps.Add(new(value.Item1, value.Item2.GetHashCode(), value.Item2, true));
+            }
+            kvps.Add(new(name, key, internalID, true));
+
+            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
+        }
+#endif
+
         private static IEnumerable<T> GetAllAssets<T>(string[] assetPaths) where T : Object
         {
             foreach (var path in assetPaths)
@@ -107,9 +181,7 @@ namespace VaporKeys
             sb.Append("//\t* THIS SCRIPT IS AUTO-GENERATED *\n");
             sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
             sb.Append("using System;\n");
-            sb.Append("using System.Collections.Generic;\n");
-            sb.Append("using System.Linq;\n");
-            sb.Append("using System.Reflection;\n\n");
+            sb.Append("using System.Collections.Generic;\n\n");
 
             sb.Append($"namespace {namespaceName}\n");
             sb.Append("{\n");
@@ -121,6 +193,8 @@ namespace VaporKeys
             {
                 useInternalID = keys[0].useInternalID;
             }
+
+            FormatFilePath(sb, $"{gameDataFilepath}", useInternalID);
 
             if (!useInternalID)
             {
@@ -136,13 +210,26 @@ namespace VaporKeys
                 sb.Append("\n");
             }
 
-            FormatEnumeration(sb, scriptName, useInternalID);
+            FormatList(sb, keys);
             FormatLookup(sb, useInternalID);
 
             sb.Append("\t}\n");
             sb.Append("}");
 
             System.IO.File.WriteAllText(filepath, sb.ToString());
+        }
+
+        private static void FormatFilePath(StringBuilder sb, string relativePath, bool useInternalID)
+        {
+            sb.Append($"\t\tpublic const string RELATIVE_PATH = \"{relativePath}\";\n");
+            if (useInternalID)
+            {
+                sb.Append($"\t\tpublic const bool USING_INTERNAL_ID = true;\n");
+            }
+            else
+            {
+                sb.Append($"\t\tpublic const bool USING_INTERNAL_ID = false;\n");
+            }
         }
 
         private static void FormatEnum(StringBuilder sb, List<KeyValuePair> keys)
@@ -161,11 +248,11 @@ namespace VaporKeys
             sb.Append("#if ODIN_INSPECTOR\n");
             if (useInternalID)
             {
-                sb.Append($"\t\tpublic static ValueDropdownList<string> DropdownValues = new ValueDropdownList<string>()\n");
+                sb.Append($"\t\tpublic static ValueDropdownList<string> DropdownValues = new()\n");
             }
             else
             {
-                sb.Append($"\t\tpublic static ValueDropdownList<int> DropdownValues = new ValueDropdownList<int>()\n");
+                sb.Append($"\t\tpublic static ValueDropdownList<int> DropdownValues = new()\n");
             }
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
@@ -178,11 +265,11 @@ namespace VaporKeys
             sb.Append("#if !ODIN_INSPECTOR\n");
             if (useInternalID)
             {
-                sb.Append($"\t\tpublic static List<Tuple<string, string>> DropdownValues = new ()\n");
+                sb.Append($"\t\tpublic static List<(string, string)> DropdownValues = new()\n");
             }
             else
             {
-                sb.Append($"\t\tpublic static List<Tuple<string, int>> DropdownValues = new ()\n");
+                sb.Append($"\t\tpublic static List<(string, int)> DropdownValues = new()\n");
             }
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
@@ -191,6 +278,18 @@ namespace VaporKeys
             }
             sb.Append("\t\t};\n");
             sb.Append("#endif\n\n");
+        }
+
+        private static void FormatList(StringBuilder sb, List<KeyValuePair> keys)
+        {
+            sb.Append("\n");
+            sb.Append($"\t\tpublic static List<int> Values = new()\n");
+            sb.Append("\t\t{\n");
+            for (int i = 0; i < keys.Count; i++)
+            {
+                sb.Append($"\t\t\t{{ {keys[i].variableName} }},\n");
+            }
+            sb.Append("\t\t};\n");
         }
 
         private static void FormatEnumeration(StringBuilder sb, string scriptName, bool useInternalID)

@@ -1,4 +1,7 @@
-# v1.0.5
+# v1.0.7
+* Introduced ney method to add keys and performance improvements for iterating keys.
+
+# v1.0.6
 * Wrapped Unity.Editor Code.
 
 # v1.0.5
