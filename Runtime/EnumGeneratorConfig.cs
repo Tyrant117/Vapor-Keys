@@ -128,7 +128,7 @@ namespace VaporKeys
             enumContent.Clear();
 
             AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+            AssetDatabase.Refresh();
 #endif
         }
     }

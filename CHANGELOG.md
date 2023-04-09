@@ -1,3 +1,6 @@
+# v1.0.8
+* Added many helper functions for adding and removing keys. Also auto-generates a flag enum.
+
 # v1.0.7
 * Introduced ney method to add keys and performance improvements for iterating keys.
 
