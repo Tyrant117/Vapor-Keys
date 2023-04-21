@@ -83,36 +83,63 @@ namespace VaporKeys
         }
 
 #if UNITY_EDITOR
-        public static void GenerateKeys(string searchFilter, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID)
+        public static void GenerateKeys(string searchFilter, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone)
         {
-            List<KeyValuePair> kvpList = new();
+            HashSet<int> takenKeys = new();
+            List<KeyValuePair> formattedKeys = new();
+
+            if(includeNone)
+            {
+               takenKeys.Add("None".GetHashCode());
+               formattedKeys.Add(new KeyValuePair("None", "None".GetHashCode(), "None", useInternalID));     
+            }
+
             List<string> guids = new();
             guids.AddRange(AssetDatabase.FindAssets(searchFilter));
             for (int i = 0; i < guids.Count; i++)
             {
                 var refVal = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guids[i]));
+                if (refVal == null) { continue; }
+                if (refVal.IsDeprecated) { continue; }
+
                 var key = refVal.name.GetHashCode();
-                kvpList.Add(new KeyValuePair(refVal.name, key, refVal.name, useInternalID));
+                if (takenKeys.Contains(key))
+                {
+                    Debug.LogError($"Key Collision: {refVal.name}. Objects cannot share a name.");
+                }
+                else
+                {
+                    takenKeys.Add(key);
+                    formattedKeys.Add(new KeyValuePair(refVal.name, key, refVal.name, useInternalID));
+                }                
             }
 
-            FormatKeyFiles(gameDataFilepath, namespaceName, scriptName, kvpList);
+            FormatKeyFiles(gameDataFilepath, namespaceName, scriptName, formattedKeys);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
 
-        public static void GenerateKeys<T>(string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID) where T : ScriptableObject, IKey
+        public static void GenerateKeys<T>(string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone) where T : ScriptableObject, IKey
         {
             string typeFilter = nameof(T);
-            GenerateKeys<T>(AssetDatabase.FindAssets(typeFilter), gameDataFilepath, namespaceName, scriptName, useInternalID);
+            Debug.Log($"Generating Keys of Type: {typeFilter}");
+            GenerateKeys<T>(AssetDatabase.FindAssets(typeFilter), gameDataFilepath, namespaceName, scriptName, useInternalID, includeNone);
         }
 
-        public static void GenerateKeys<T>(string[] assetPaths, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID) where T : ScriptableObject, IKey
+        public static void GenerateKeys<T>(string[] assetPaths, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone) where T : ScriptableObject, IKey
         {
             HashSet<int> takenKeys = new();
             List<KeyValuePair> formattedKeys = new();
 
+            if(includeNone)
+            {
+               takenKeys.Add("None".GetHashCode());
+               formattedKeys.Add(new KeyValuePair("None", "None".GetHashCode(), "None", useInternalID));     
+            }
+
             foreach (var item in GetAllAssets<T>(assetPaths))
             {
+                if (item == null) { continue; }
                 if (item.IsDeprecated) { continue; }
 
                 if (takenKeys.Contains(item.Key))

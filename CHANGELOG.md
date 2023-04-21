@@ -1,3 +1,6 @@
+# v1.0.9
+* Fleshed out the GenerateKeys<T> methods.
+
 # v1.0.8
 * Added many helper functions for adding and removing keys. Also auto-generates a flag enum.
 
