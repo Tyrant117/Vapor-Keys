@@ -1,3 +1,6 @@
+# v1.0.10
+* Various bug fixes.
+
 # v1.0.9
 * Fleshed out the GenerateKeys<T> methods.
 
