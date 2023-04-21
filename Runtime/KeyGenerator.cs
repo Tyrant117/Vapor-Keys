@@ -629,9 +629,12 @@ namespace VaporKeys
                 sb.Append($"\t\tpublic enum AsFlags : int\n");
                 sb.Append("\t\t{\n");
                 sb.Append($"\t\t\tNone = 0,\n");
+                int skipNone = 0;
                 for (int i = 0; i < keys.Count; i++)
                 {
-                    int flagID = i;
+                    if(keys[i].displayName == "None") { skipNone = 1; continue; }
+
+                    int flagID = i - skipNone;
                     sb.Append($"\t\t\t{keys[i].variableName} = 1 << {flagID},\n");
                 }
                 sb.Append($"\t\t\tEverything = ~0,\n");
@@ -639,9 +642,12 @@ namespace VaporKeys
 
                 sb.Append($"\t\tpublic static Dictionary<int, int> FlagToValueMap = new()\n");
                 sb.Append("\t\t{\n");
+                skipNone = 0;
                 for (int i = 0; i < keys.Count; i++)
                 {
-                    int flag = 1 << i;
+                    if(keys[i].displayName == "None") { skipNone = 1; continue; }
+
+                    int flag = 1 << (i - skipNone);
                     sb.Append($"\t\t\t{{ {flag}, {keys[i].key} }},\n");
                 }
                 sb.Append("\t\t};\n\n");
