@@ -121,7 +121,7 @@ namespace VaporKeys
 
         public static void GenerateKeys<T>(string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone) where T : ScriptableObject, IKey
         {
-            string typeFilter = nameof(T);
+            string typeFilter = typeof(T).Name;
             Debug.Log($"Generating Keys of Type: {typeFilter}");
             GenerateKeys<T>(AssetDatabase.FindAssets(typeFilter), gameDataFilepath, namespaceName, scriptName, useInternalID, includeNone);
         }
