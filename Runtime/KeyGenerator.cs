@@ -100,7 +100,7 @@ namespace VaporKeys
             {
                 var refVal = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guids[i]));
                 if (refVal == null) { continue; }
-                if (refVal.IsDeprecated) { continue; }
+                if (refVal is IKey rfk && rfk.IsDeprecated) { continue; }
 
                 var key = refVal.name.GetHashCode();
                 if (takenKeys.Contains(key))
