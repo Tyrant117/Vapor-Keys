@@ -38,6 +38,7 @@ namespace VaporKeys
             {
                 this.displayName = key.DisplayName;
                 this.variableName = Regex.Replace(key.DisplayName, " ", "");
+                key.ForceRefreshKey();
                 this.key = key.Key;
                 this.internalID = key.InternalID;
                 this.useInternalID = useInternalID;
@@ -90,8 +91,8 @@ namespace VaporKeys
 
             if(includeNone)
             {
-               takenKeys.Add("None".GetHashCode());
-               formattedKeys.Add(new KeyValuePair("None", "None".GetHashCode(), "None", useInternalID));     
+               takenKeys.Add(0);
+               formattedKeys.Add(new KeyValuePair("None", 0, "None", useInternalID));     
             }
 
             List<string> guids = new();
@@ -133,8 +134,8 @@ namespace VaporKeys
 
             if(includeNone)
             {
-               takenKeys.Add("None".GetHashCode());
-               formattedKeys.Add(new KeyValuePair("None", "None".GetHashCode(), "None", useInternalID));     
+               takenKeys.Add(0);
+               formattedKeys.Add(new KeyValuePair("None", 0, "None", useInternalID));     
             }
 
             foreach (var item in GetAllAssets<T>(assetPaths))
@@ -142,6 +143,7 @@ namespace VaporKeys
                 if (item == null) { continue; }
                 if (item.IsDeprecated) { continue; }
 
+                item.ForceRefreshKey();
                 if (takenKeys.Contains(item.Key))
                 {
                     Debug.LogError($"Key Collision: {item.name}. Objects cannot share a name.");

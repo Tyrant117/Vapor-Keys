@@ -1,3 +1,6 @@
+# v1.0.11
+* Implemented a forced key refresh when keys are being generated.
+
 # v1.0.10
 * Various bug fixes.
 
