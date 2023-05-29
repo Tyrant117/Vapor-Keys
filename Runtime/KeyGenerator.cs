@@ -9,7 +9,6 @@ using System;
 using Object = UnityEngine.Object;
 #if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
-using System.Linq;
 #endif
 
 namespace VaporKeys
@@ -39,6 +38,12 @@ namespace VaporKeys
                 this.displayName = key.DisplayName;
                 this.variableName = Regex.Replace(key.DisplayName, " ", "");
                 key.ForceRefreshKey();
+#if UNITY_EDITOR
+                if(key is ScriptableObject so)
+                {
+                    EditorUtility.SetDirty(so);
+                }
+#endif
                 this.key = key.Key;
                 this.internalID = key.InternalID;
                 this.useInternalID = useInternalID;
@@ -150,6 +155,7 @@ namespace VaporKeys
                 }
                 else
                 {
+                    EditorUtility.SetDirty(item);
                     takenKeys.Add(item.Key);
                     formattedKeys.Add(new KeyValuePair(item.name, item.Key, item.InternalID, useInternalID));
                 }
