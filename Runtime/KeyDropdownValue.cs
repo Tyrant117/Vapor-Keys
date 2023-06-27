@@ -1,4 +1,6 @@
+#if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
+#endif
 using System.Diagnostics;
 using UnityEngine;
 
@@ -8,7 +10,9 @@ namespace VaporKeys
     public struct KeyDropdownValue
     {
         public string Guid;
+#if ODIN_INSPECTOR
         [InlineButton("Remap")]
+#endif
         public int Key;
 
         public KeyDropdownValue(string guid, int key)
