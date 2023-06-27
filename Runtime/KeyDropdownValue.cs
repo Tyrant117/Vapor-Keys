@@ -9,6 +9,8 @@ namespace VaporKeys
     [System.Serializable]
     public struct KeyDropdownValue
     {
+        public static implicit operator int(KeyDropdownValue kdv) => kdv.Key;
+
         public string Guid;
 #if ODIN_INSPECTOR
         [InlineButton("Remap")]
