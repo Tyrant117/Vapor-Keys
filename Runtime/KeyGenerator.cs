@@ -431,6 +431,7 @@ namespace VaporKeys
 
             FormatList(sb, keys);
             FormatLookup(sb);
+            FormatGet(sb);
 
             sb.Append("\t}\n");
             sb.Append("}");
@@ -553,6 +554,31 @@ namespace VaporKeys
             sb.Append("\t\t{\n");
 
             sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2.Key == id).Item1;\n");
+
+            sb.Append("\t\t}\n");
+
+            sb.Append("#endif\n");
+        }
+
+        private static void FormatGet(StringBuilder sb)
+        {
+            sb.Append("#if ODIN_INSPECTOR\n");
+
+            sb.Append($"\t\tpublic static KeyDropdownValue Get(int id)\n");
+            sb.Append("\t\t{\n");
+
+            sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value.Key == id).Value;\n");
+
+            sb.Append("\t\t}\n");
+
+            sb.Append("#endif\n");
+
+            sb.Append("#if !ODIN_INSPECTOR\n");
+
+            sb.Append($"\t\tpublic static KeyDropdownValue Get(int id)\n");
+            sb.Append("\t\t{\n");
+
+            sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2.Key == id).Item2;\n");
 
             sb.Append("\t\t}\n");
 
