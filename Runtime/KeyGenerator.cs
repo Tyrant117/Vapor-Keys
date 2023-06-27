@@ -38,7 +38,7 @@ namespace VaporKeys
                 key.ForceRefreshKey();
                 guid = string.Empty;
 #if UNITY_EDITOR
-                if(key is ScriptableObject so)
+                if(key is Object so)
                 {
                     guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
                     EditorUtility.SetDirty(so);
@@ -113,7 +113,7 @@ namespace VaporKeys
                 else
                 {
                     takenKeys.Add(key);
-                    if (refVal is ScriptableObject so)
+                    if (refVal is Object so)
                     {
                         var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
                         formattedKeys.Add(new KeyValuePair(refVal.name, key, guid));
@@ -184,7 +184,7 @@ namespace VaporKeys
                     Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
                     return;
                 }
-                if (keyToAdd is ScriptableObject so)
+                if (keyToAdd is Object so)
                 {
                     var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
                     kvps.Add(new(value.Text, value.Value, guid));
