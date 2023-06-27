@@ -1,3 +1,8 @@
+# v2.0.0
+* Major breaking changes.
+* Overhauled the key viewer and added a remapping system.
+* Removed internal IDs.
+
 # v1.0.11
 * Implemented a forced key refresh when keys are being generated.
 
