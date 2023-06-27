@@ -361,26 +361,26 @@ namespace VaporKeys
 #endif
 
 #if !ODIN_INSPECTOR
-        public static void AddKey(Type type, string relativePath, List<(string, int)> values, string name, int key, string internalID)
+        public static void AddKey(Type type, string relativePath, List<(string, int)> values, string name, int key)
         {
             List<KeyValuePair> kvps = new();
             foreach (var value in values)
             {
-                kvps.Add(new(value.Item1, value.Item2, value.Item1, false));
+                kvps.Add(new(value.Item1, value.Item2, string.Empty));
             }
-            kvps.Add(new(name, key, internalID, false));
+            kvps.Add(new(name, key, string.Empty));
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKey(Type type, string relativePath, List<(string, string)> values, string name, int key, string internalID)
+        public static void AddKey(Type type, string relativePath, List<(string, string)> values, string name, int key)
         {
             List<KeyValuePair> kvps = new();
             foreach (var value in values)
             {
-                kvps.Add(new(value.Item1, value.Item2.GetHashCode(), value.Item2, true));
+                kvps.Add(new(value.Item1, value.Item2.GetKeyHashCode(), string.Empty));
             }
-            kvps.Add(new(name, key, internalID, true));
+            kvps.Add(new(name, key, string.Empty));
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
