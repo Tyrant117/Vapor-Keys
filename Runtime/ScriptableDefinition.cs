@@ -11,7 +11,7 @@ namespace VaporKeys
         public bool customOrder;
         public int startingValue;
         public int orderDirection;
-        public bool useInternalID;
+        public bool createNone;
         public List<string> enumContent;
     }
 }

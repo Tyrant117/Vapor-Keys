@@ -20,40 +20,37 @@ namespace VaporKeys
         {
             public string displayName;
             public string variableName;
+            public string guid;
             public int key;
-            public string internalID;
-            public readonly bool useInternalID;
 
-            public KeyValuePair(string name, int key, string internalID, bool useInternalID)
+            public KeyValuePair(string name, int key, string guid)
             {
                 this.displayName = name;
                 this.variableName = Regex.Replace(name, " ", "");
+                this.guid = guid;
                 this.key = key;
-                this.internalID = internalID;
-                this.useInternalID = useInternalID;
             }
 
-            public KeyValuePair(IKey key, bool useInternalID)
+            public KeyValuePair(IKey key)
             {
                 this.displayName = key.DisplayName;
                 this.variableName = Regex.Replace(key.DisplayName, " ", "");
                 key.ForceRefreshKey();
+                guid = string.Empty;
 #if UNITY_EDITOR
                 if(key is ScriptableObject so)
                 {
+                    guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
                     EditorUtility.SetDirty(so);
                 }
 #endif
                 this.key = key.Key;
-                this.internalID = key.InternalID;
-                this.useInternalID = useInternalID;
             }
 
             public string GetFormat(int placeholderIndex)
             {
                 string vName = variableName.Length > 0 ? variableName : "Placeholder_" + placeholderIndex;
-                return useInternalID ? $"public const string {vName} = \"{internalID}\";"
-                                     : $"public const int {vName} = {key};";
+                return $"public const int {vName} = {key};";
             }
 
             private static string InsertSpaceBeforeUpperCase(string str)
@@ -83,13 +80,13 @@ namespace VaporKeys
             }
         }
 
-        public static KeyValuePair StringToKeyValuePair(string key, bool useInternalID)
+        public static KeyValuePair StringToKeyValuePair(string key)
         {
-            return new KeyValuePair(key, key.GetHashCode(), key, useInternalID);
+            return new KeyValuePair(key, key.GetKeyHashCode(), string.Empty);
         }
 
 #if UNITY_EDITOR
-        public static void GenerateKeys(string searchFilter, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone)
+        public static void GenerateKeys(string searchFilter, string gameDataFilepath, string namespaceName, string scriptName, bool includeNone)
         {
             HashSet<int> takenKeys = new();
             List<KeyValuePair> formattedKeys = new();
@@ -97,7 +94,7 @@ namespace VaporKeys
             if(includeNone)
             {
                takenKeys.Add(0);
-               formattedKeys.Add(new KeyValuePair("None", 0, "None", useInternalID));     
+               formattedKeys.Add(new KeyValuePair("None", 0, string.Empty));     
             }
 
             List<string> guids = new();
@@ -108,7 +105,7 @@ namespace VaporKeys
                 if (refVal == null) { continue; }
                 if (refVal is IKey rfk && rfk.IsDeprecated) { continue; }
 
-                var key = refVal.name.GetHashCode();
+                var key = refVal.name.GetKeyHashCode();
                 if (takenKeys.Contains(key))
                 {
                     Debug.LogError($"Key Collision: {refVal.name}. Objects cannot share a name.");
@@ -116,7 +113,15 @@ namespace VaporKeys
                 else
                 {
                     takenKeys.Add(key);
-                    formattedKeys.Add(new KeyValuePair(refVal.name, key, refVal.name, useInternalID));
+                    if (refVal is ScriptableObject so)
+                    {
+                        var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
+                        formattedKeys.Add(new KeyValuePair(refVal.name, key, guid));
+                    }
+                    else
+                    {
+                        formattedKeys.Add(new KeyValuePair(refVal.name, key, string.Empty));
+                    }
                 }                
             }
 
@@ -125,14 +130,14 @@ namespace VaporKeys
             AssetDatabase.Refresh();
         }
 
-        public static void GenerateKeys<T>(string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone) where T : ScriptableObject, IKey
+        public static void GenerateKeys<T>(string gameDataFilepath, string namespaceName, string scriptName, bool includeNone) where T : ScriptableObject, IKey
         {
             string typeFilter = typeof(T).Name;
             Debug.Log($"Generating Keys of Type: {typeFilter}");
-            GenerateKeys<T>(AssetDatabase.FindAssets($"t:{typeFilter}"), gameDataFilepath, namespaceName, scriptName, useInternalID, includeNone);
+            GenerateKeys<T>(AssetDatabase.FindAssets($"t:{typeFilter}"), gameDataFilepath, namespaceName, scriptName, includeNone);
         }
 
-        public static void GenerateKeys<T>(string[] assetPaths, string gameDataFilepath, string namespaceName, string scriptName, bool useInternalID, bool includeNone) where T : ScriptableObject, IKey
+        public static void GenerateKeys<T>(string[] guids, string gameDataFilepath, string namespaceName, string scriptName, bool includeNone) where T : ScriptableObject, IKey
         {
             HashSet<int> takenKeys = new();
             List<KeyValuePair> formattedKeys = new();
@@ -140,10 +145,10 @@ namespace VaporKeys
             if(includeNone)
             {
                takenKeys.Add(0);
-               formattedKeys.Add(new KeyValuePair("None", 0, "None", useInternalID));     
+               formattedKeys.Add(new KeyValuePair("None", 0, string.Empty));     
             }
 
-            foreach (var item in GetAllAssets<T>(assetPaths))
+            foreach (var item in GetAllAssets<T>(guids))
             {
                 if (item == null) { continue; }
                 if (item.IsDeprecated) { continue; }
@@ -157,7 +162,8 @@ namespace VaporKeys
                 {
                     EditorUtility.SetDirty(item);
                     takenKeys.Add(item.Key);
-                    formattedKeys.Add(new KeyValuePair(item.name, item.Key, item.InternalID, useInternalID));
+                    var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(item));
+                    formattedKeys.Add(new KeyValuePair(item.name, item.Key, guid));
                 }
             }
 
@@ -170,7 +176,7 @@ namespace VaporKeys
         public static void AddKey(Type type, string relativePath, ValueDropdownList<int> values, IKey keyToAdd)
         {
             List<KeyValuePair> kvps = new();
-            KeyValuePair newKvp = new(keyToAdd, false);
+            KeyValuePair newKvp = new(keyToAdd);
             foreach (var value in values)
             {
                 if (value.Value == newKvp.key)
@@ -178,84 +184,56 @@ namespace VaporKeys
                     Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value, value.Text, false));
+                if (keyToAdd is ScriptableObject so)
+                {
+                    var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
+                    kvps.Add(new(value.Text, value.Value, guid));
+                }
+                else
+                {
+                    kvps.Add(new(value.Text, value.Value, string.Empty));
+                }
             }
             kvps.Add(newKvp);
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKey(Type type, string relativePath, ValueDropdownList<string> values, IKey keyToAdd)
+        public static void AddKey(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string keyToAdd)
         {
             List<KeyValuePair> kvps = new();
-            KeyValuePair newKvp = new(keyToAdd, true);
+            KeyValuePair newKvp = StringToKeyValuePair(keyToAdd);
             foreach (var value in values)
             {
-                if (value.Value == newKvp.internalID)
+                if (value.Value.Key == newKvp.key)
                 {
                     Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
+                kvps.Add(new(value.Text, value.Value.Key, string.Empty));
             }
             kvps.Add(newKvp);
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKey(Type type, string relativePath, ValueDropdownList<int> values, string keyToAdd)
-        {
-            List<KeyValuePair> kvps = new();
-            KeyValuePair newKvp = StringToKeyValuePair(keyToAdd, false);
-            foreach (var value in values)
-            {
-                if (value.Value == newKvp.key)
-                {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
-                    return;
-                }
-                kvps.Add(new(value.Text, value.Value, value.Text, false));
-            }
-            kvps.Add(newKvp);
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void AddKey(Type type, string relativePath, ValueDropdownList<string> values, string keyToAdd)
-        {
-            List<KeyValuePair> kvps = new();
-            KeyValuePair newKvp = StringToKeyValuePair(keyToAdd, true);
-            foreach (var value in values)
-            {
-                if (value.Value == newKvp.internalID)
-                {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
-                    return;
-                }
-                kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Value, true));
-            }
-            kvps.Add(newKvp);
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void AddKeys(Type type, string relativePath, ValueDropdownList<int> values, IKey[] keysToAdd)
+        public static void AddKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey[] keysToAdd)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> newKvps = new();
             foreach (var keyToAdd in keysToAdd)
             {
-                newKvps.Add(new(keyToAdd, false));
+                newKvps.Add(new(keyToAdd));
             }
             foreach (var value in values)
             {
-                bool match(KeyValuePair x) => x.key == value.Value;
+                bool match(KeyValuePair x) => x.key == value.Value.Key;
                 if (newKvps.Exists(match))
                 {
                     Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value, value.Text, false));
+                kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
             }
             foreach (var newKvp in newKvps)
             {
@@ -265,23 +243,23 @@ namespace VaporKeys
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKeys(Type type, string relativePath, ValueDropdownList<string> values, IKey[] keysToAdd)
+        public static void AddKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string[] keysToAdd)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> newKvps = new();
             foreach (var keyToAdd in keysToAdd)
             {
-                newKvps.Add(new(keyToAdd, true));
+                newKvps.Add(StringToKeyValuePair(keyToAdd));
             }
             foreach (var value in values)
             {
-                bool match(KeyValuePair x) => x.internalID == value.Value;
+                bool match(KeyValuePair x) => x.key == value.Value.Key;
                 if (newKvps.Exists(match))
                 {
                     Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
+                kvps.Add(new(value.Text, value.Value.Key, string.Empty));
             }
             foreach (var newKvp in newKvps)
             {
@@ -291,195 +269,75 @@ namespace VaporKeys
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKeys(Type type, string relativePath, ValueDropdownList<int> values, string[] keysToAdd)
+        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey keyToRemove)
         {
             List<KeyValuePair> kvps = new();
-            List<KeyValuePair> newKvps = new();
-            foreach (var keyToAdd in keysToAdd)
-            {
-                newKvps.Add(StringToKeyValuePair(keyToAdd, false));
-            }
+            KeyValuePair removeKvp = new(keyToRemove);
             foreach (var value in values)
             {
-                bool match(KeyValuePair x) => x.key == value.Value;
-                if (newKvps.Exists(match))
+                if (value.Value.Key != removeKvp.key)
                 {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
-                    return;
-                }
-                kvps.Add(new(value.Text, value.Value, value.Text, false));
-            }
-            foreach (var newKvp in newKvps)
-            {
-                kvps.Add(newKvp);
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void AddKeys(Type type, string relativePath, ValueDropdownList<string> values, string[] keysToAdd)
-        {
-            List<KeyValuePair> kvps = new();
-            List<KeyValuePair> newKvps = new();
-            foreach (var keyToAdd in keysToAdd)
-            {
-                newKvps.Add(StringToKeyValuePair(keyToAdd, true));
-            }
-            foreach (var value in values)
-            {
-                bool match(KeyValuePair x) => x.internalID == value.Value;
-                if (newKvps.Exists(match))
-                {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
-                    return;
-                }
-                kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
-            }
-            foreach (var newKvp in newKvps)
-            {
-                kvps.Add(newKvp);
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<int> values, IKey keyToRemove)
-        {
-            List<KeyValuePair> kvps = new();
-            KeyValuePair removeKvp = new(keyToRemove, false);
-            foreach (var value in values)
-            {
-                if (value.Value != removeKvp.key)
-                {
-                    kvps.Add(new(value.Text, value.Value, value.Text, false));
+                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<string> values, IKey keyToRemove)
+        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string keyToRemove)
         {
             List<KeyValuePair> kvps = new();
-            KeyValuePair removeKvp = new(keyToRemove, true);
+            KeyValuePair removeKvp = StringToKeyValuePair(keyToRemove);
             foreach (var value in values)
             {
-                if (value.Value != removeKvp.internalID)
+                if (value.Value.Key != removeKvp.key)
                 {
-                    kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
+                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<int> values, string keyToRemove)
-        {
-            List<KeyValuePair> kvps = new();
-            KeyValuePair removeKvp = StringToKeyValuePair(keyToRemove, false);
-            foreach (var value in values)
-            {
-                if (value.Value != removeKvp.key)
-                {
-                    kvps.Add(new(value.Text, value.Value, value.Text, false));
-                }
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<string> values, string keyToRemove)
-        {
-            List<KeyValuePair> kvps = new();
-            KeyValuePair removeKvp = StringToKeyValuePair(keyToRemove, true);
-            foreach (var value in values)
-            {
-                if (value.Value != removeKvp.internalID)
-                {
-                    kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
-                }
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<int> values, IKey[] keysToRemove)
+        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey[] keysToRemove)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> removeKvps = new();
             foreach (var keyToAdd in keysToRemove)
             {
-                removeKvps.Add(new(keyToAdd, false));
+                removeKvps.Add(new(keyToAdd));
             }
             foreach (var value in values)
             {
-                if (!removeKvps.Exists(x => x.key == value.Value))
+                if (!removeKvps.Exists(x => x.key == value.Value.Key))
                 {
-                    kvps.Add(new(value.Text, value.Value, value.Text, false));
+                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<string> values, IKey[] keysToRemove)
+        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string[] keysToRemove)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> removeKvps = new();
             foreach (var keyToAdd in keysToRemove)
             {
-                removeKvps.Add(new(keyToAdd, true));
+                removeKvps.Add(StringToKeyValuePair(keyToAdd));
             }
             foreach (var value in values)
             {
-                if (!removeKvps.Exists(x => x.internalID == value.Value))
+                if (!removeKvps.Exists(x => x.key == value.Value.Key))
                 {
-                    kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
+                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<int> values, string[] keysToRemove)
-        {
-            List<KeyValuePair> kvps = new();
-            List<KeyValuePair> removeKvps = new();
-            foreach (var keyToAdd in keysToRemove)
-            {
-                removeKvps.Add(StringToKeyValuePair(keyToAdd, false));
-            }
-            foreach (var value in values)
-            {
-                if (!removeKvps.Exists(x => x.key == value.Value))
-                {
-                    kvps.Add(new(value.Text, value.Value, value.Text, false));
-                }
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<string> values, string[] keysToRemove)
-        {
-            List<KeyValuePair> kvps = new();
-            List<KeyValuePair> removeKvps = new();
-            foreach (var keyToAdd in keysToRemove)
-            {
-                removeKvps.Add(StringToKeyValuePair(keyToAdd, true));
-            }
-            foreach (var value in values)
-            {
-                if (!removeKvps.Exists(x => x.internalID == value.Value))
-                {
-                    kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
-                }
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void RemoveDeprecated(Type type, string relativePath, ValueDropdownList<int> values, IKey[] keysToRemove)
+        public static void RemoveDeprecated(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey[] keysToRemove)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> removeKvps = new();
@@ -487,36 +345,14 @@ namespace VaporKeys
             {
                 if (keyToRemove.IsDeprecated)
                 {
-                    removeKvps.Add(new(keyToRemove, false));
+                    removeKvps.Add(new(keyToRemove));
                 }
             }
             foreach (var value in values)
             {
-                if (!removeKvps.Exists(x => x.key == value.Value))
+                if (!removeKvps.Exists(x => x.key == value.Value.Key))
                 {
-                    kvps.Add(new(value.Text, value.Value, value.Text, false));
-                }
-            }
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void RemoveDeprecated(Type type, string relativePath, ValueDropdownList<string> values, IKey[] keysToRemove)
-        {
-            List<KeyValuePair> kvps = new();
-            List<KeyValuePair> removeKvps = new();
-            foreach (var keyToRemove in keysToRemove)
-            {
-                if (keyToRemove.IsDeprecated)
-                {
-                    removeKvps.Add(new(keyToRemove, true));
-                }
-            }
-            foreach (var value in values)
-            {
-                if (!removeKvps.Exists(x => x.internalID == value.Value))
-                {
-                    kvps.Add(new(value.Text, value.Value.GetHashCode(), value.Text, false));
+                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
                 }
             }
 
@@ -550,11 +386,11 @@ namespace VaporKeys
         }
 #endif
 
-        private static IEnumerable<T> GetAllAssets<T>(string[] assetPaths) where T : Object
+        private static IEnumerable<T> GetAllAssets<T>(string[] guids) where T : Object
         {
-            foreach (var path in assetPaths)
+            foreach (var guid in guids)
             {
-                yield return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(path));
+                yield return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
             }
         }
 #endif
@@ -570,6 +406,7 @@ namespace VaporKeys
             sb.Append("//\t* THIS SCRIPT IS AUTO-GENERATED *\n");
             sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
             sb.Append("using System;\n");
+            sb.Append("using VaporKeys;\n");
             sb.Append("using System.Collections.Generic;\n\n");
 
             sb.Append($"namespace {namespaceName}\n");
@@ -577,19 +414,12 @@ namespace VaporKeys
             sb.Append($"\tpublic class {scriptName}\n");
             sb.Append("\t{\n");
 
-            bool useInternalID = false;
-            if (keys.Count > 0)
-            {
-                useInternalID = keys[0].useInternalID;
-            }
 
-            FormatFilePath(sb, $"{gameDataFilepath}", useInternalID);
+            FormatFilePath(sb, $"{gameDataFilepath}");
 
-            if (!useInternalID)
-            {
-                FormatEnum(sb, keys);
-            }
-            FormatOdinDropDown(sb, keys, useInternalID);
+            FormatEnum(sb, keys);
+
+            FormatOdinDropDown(sb, keys);
 
             for (int i = 0; i < keys.Count; i++)
             {
@@ -600,7 +430,7 @@ namespace VaporKeys
             }
 
             FormatList(sb, keys);
-            FormatLookup(sb, useInternalID);
+            FormatLookup(sb);
 
             sb.Append("\t}\n");
             sb.Append("}");
@@ -608,17 +438,9 @@ namespace VaporKeys
             System.IO.File.WriteAllText(filepath, sb.ToString());
         }
 
-        private static void FormatFilePath(StringBuilder sb, string relativePath, bool useInternalID)
+        private static void FormatFilePath(StringBuilder sb, string relativePath)
         {
             sb.Append($"\t\tpublic const string RELATIVE_PATH = \"{relativePath}\";\n");
-            if (useInternalID)
-            {
-                sb.Append($"\t\tpublic const bool USING_INTERNAL_ID = true;\n");
-            }
-            else
-            {
-                sb.Append($"\t\tpublic const bool USING_INTERNAL_ID = false;\n");
-            }
         }
 
         private static void FormatEnum(StringBuilder sb, List<KeyValuePair> keys)
@@ -662,38 +484,24 @@ namespace VaporKeys
             }
         }
 
-        private static void FormatOdinDropDown(StringBuilder sb, List<KeyValuePair> keys, bool useInternalID)
+        private static void FormatOdinDropDown(StringBuilder sb, List<KeyValuePair> keys)
         {
             sb.Append("#if ODIN_INSPECTOR\n");
-            if (useInternalID)
-            {
-                sb.Append($"\t\tpublic static ValueDropdownList<string> DropdownValues = new()\n");
-            }
-            else
-            {
-                sb.Append($"\t\tpublic static ValueDropdownList<int> DropdownValues = new()\n");
-            }
+            sb.Append($"\t\tpublic static ValueDropdownList<KeyDropdownValue> DropdownValues = new()\n");
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
             {
-                sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", {keys[i].variableName} }},\n");
+                sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", new (\"{keys[i].guid}\", {keys[i].variableName}) }},\n");
             }
             sb.Append("\t\t};\n");
             sb.Append("#endif\n\n");
 
             sb.Append("#if !ODIN_INSPECTOR\n");
-            if (useInternalID)
-            {
-                sb.Append($"\t\tpublic static List<(string, string)> DropdownValues = new()\n");
-            }
-            else
-            {
-                sb.Append($"\t\tpublic static List<(string, int)> DropdownValues = new()\n");
-            }
+            sb.Append($"\t\tpublic static List<(string, KeyDropdownValue)> DropdownValues = new()\n");
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
             {
-                sb.Append($"\t\t\tnew (\"{keys[i].displayName}\", {keys[i].variableName}),\n");
+                sb.Append($"\t\t\tnew (\"{keys[i].displayName}\", new (\"{keys[i].guid}\", {keys[i].variableName})),\n");
             }
             sb.Append("\t\t};\n");
             sb.Append("#endif\n\n");
@@ -702,7 +510,7 @@ namespace VaporKeys
         private static void FormatList(StringBuilder sb, List<KeyValuePair> keys)
         {
             sb.Append("\n");
-            sb.Append($"\t\tpublic static List<int> Values = new()\n");
+            sb.Append($"\t\tpublic static List<int> Values = new ()\n");
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
             {
@@ -711,80 +519,43 @@ namespace VaporKeys
             sb.Append("\t\t};\n");
         }
 
-        private static void FormatEnumeration(StringBuilder sb, string scriptName, bool useInternalID)
+        private static void FormatEnumeration(StringBuilder sb, string scriptName)
         {
-            if (useInternalID)
-            {
-                sb.Append($"\t\tpublic static IEnumerable<string> EnumerateValues()\n");
-                sb.Append("\t\t{\n");
+            sb.Append($"\t\tpublic static IEnumerable<int> EnumerateValues()\n");
+            sb.Append("\t\t{\n");
 
-                sb.Append($"\t\t\tvar refVals = (typeof({scriptName})).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(fi => fi.IsLiteral && !fi.IsInitOnly && fi.FieldType == typeof(string));\n");
-                sb.Append("\n");
-                sb.Append($"\t\t\tforeach (var fi in refVals)\n");
-                sb.Append("\t\t\t{\n");
-                sb.Append($"\t\t\t\tyield return (string)fi.GetRawConstantValue();\n");
-                sb.Append("\t\t\t}\n");
+            sb.Append($"\t\t\tvar refVals = (typeof({scriptName})).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(fi => fi.IsLiteral && !fi.IsInitOnly && fi.FieldType == typeof(int));\n");
+            sb.Append("\n");
+            sb.Append($"\t\t\tforeach (var fi in refVals)\n");
+            sb.Append("\t\t\t{\n");
+            sb.Append($"\t\t\t\tyield return (int)fi.GetRawConstantValue();\n");
+            sb.Append("\t\t\t}\n");
 
-                sb.Append("\t\t}\n");
-            }
-            else
-            {
-                sb.Append($"\t\tpublic static IEnumerable<int> EnumerateValues()\n");
-                sb.Append("\t\t{\n");
-
-                sb.Append($"\t\t\tvar refVals = (typeof({scriptName})).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(fi => fi.IsLiteral && !fi.IsInitOnly && fi.FieldType == typeof(int));\n");
-                sb.Append("\n");
-                sb.Append($"\t\t\tforeach (var fi in refVals)\n");
-                sb.Append("\t\t\t{\n");
-                sb.Append($"\t\t\t\tyield return (int)fi.GetRawConstantValue();\n");
-                sb.Append("\t\t\t}\n");
-
-                sb.Append("\t\t}\n");
-            }
+            sb.Append("\t\t}\n");
         }
 
-        private static void FormatLookup(StringBuilder sb, bool useInternalID)
+        private static void FormatLookup(StringBuilder sb)
         {
             sb.Append("#if ODIN_INSPECTOR\n");
-            if (useInternalID)
-            {
-                sb.Append($"\t\tpublic static string Lookup(string id)\n");
-                sb.Append("\t\t{\n");
 
-                sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value == id).Text;\n");
+            sb.Append($"\t\tpublic static string Lookup(int id)\n");
+            sb.Append("\t\t{\n");
 
-                sb.Append("\t\t}\n");
-            }
-            else
-            {
-                sb.Append($"\t\tpublic static string Lookup(int id)\n");
-                sb.Append("\t\t{\n");
+            sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value.Key == id).Text;\n");
 
-                sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value == id).Text;\n");
+            sb.Append("\t\t}\n");
 
-                sb.Append("\t\t}\n");
-            }
             sb.Append("#endif\n");
 
             sb.Append("#if !ODIN_INSPECTOR\n");
-            if (useInternalID)
-            {
-                sb.Append($"\t\tpublic static string Lookup(string id)\n");
-                sb.Append("\t\t{\n");
 
-                sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2 == id).Item1;\n");
+            sb.Append($"\t\tpublic static string Lookup(int id)\n");
+            sb.Append("\t\t{\n");
 
-                sb.Append("\t\t}\n");
-            }
-            else
-            {
-                sb.Append($"\t\tpublic static string Lookup(int id)\n");
-                sb.Append("\t\t{\n");
+            sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2.Key == id).Item1;\n");
 
-                sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Item2 == id).Item1;\n");
+            sb.Append("\t\t}\n");
 
-                sb.Append("\t\t}\n");
-            }
             sb.Append("#endif\n");
         }
         #endregion

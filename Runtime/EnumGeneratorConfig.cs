@@ -38,7 +38,7 @@ namespace VaporKeys
             customOrder = loadDefinition.customOrder;
             startingValue = loadDefinition.startingValue;
             orderDirection = (OrderDirection)loadDefinition.orderDirection;
-            useInternalID = loadDefinition.useInternalID;
+            createNone = loadDefinition.createNone;
             enumContent = new List<string>(loadDefinition.enumContent);
             loadDefinition = null;
             AssetDatabase.Refresh();
@@ -64,7 +64,7 @@ namespace VaporKeys
 #if ODIN_INSPECTOR
         [BoxGroup("Enum Properties")]
 #endif
-        public bool useInternalID;
+        public bool createNone;
 #if ODIN_INSPECTOR
         [BoxGroup("Enum Properties"), ShowIf("@customOrder")]
 #endif
@@ -87,11 +87,11 @@ namespace VaporKeys
 
             var kvp = new List<KeyGenerator.KeyValuePair>();
             int currentValue = startingValue;
-            foreach (var name in enumContent)
+            if (createNone)
             {
                 if (customOrder)
                 {
-                    kvp.Add(new KeyGenerator.KeyValuePair(name, currentValue, Regex.Replace(name, " ", "_"), useInternalID));
+                    kvp.Add(new KeyGenerator.KeyValuePair("None", currentValue, string.Empty));
                     switch (orderDirection)
                     {
                         case OrderDirection.CountUp:
@@ -104,7 +104,27 @@ namespace VaporKeys
                 }
                 else
                 {
-                    kvp.Add(new KeyGenerator.KeyValuePair(name, name.GetHashCode(), Regex.Replace(name, " ", "_"), useInternalID));
+                    kvp.Add(new KeyGenerator.KeyValuePair("None", 0, string.Empty));
+                }
+            }
+            foreach (var name in enumContent)
+            {
+                if (customOrder)
+                {
+                    kvp.Add(new KeyGenerator.KeyValuePair(name, currentValue, string.Empty));
+                    switch (orderDirection)
+                    {
+                        case OrderDirection.CountUp:
+                            currentValue++;
+                            break;
+                        case OrderDirection.CountDown:
+                            currentValue--;
+                            break;
+                    }
+                }
+                else
+                {
+                    kvp.Add(new KeyGenerator.KeyValuePair(name, name.GetKeyHashCode(), string.Empty));
                 }
             }
 
@@ -118,7 +138,7 @@ namespace VaporKeys
                 customOrder = customOrder,
                 startingValue = startingValue,
                 orderDirection = (int)orderDirection,
-                useInternalID = useInternalID,
+                createNone = createNone,
                 enumContent = new List<string>(enumContent)
             };
 
