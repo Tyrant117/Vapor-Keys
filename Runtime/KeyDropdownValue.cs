@@ -11,6 +11,9 @@ namespace VaporKeys
     {
         public static implicit operator int(KeyDropdownValue kdv) => kdv.Key;
 
+#if ODIN_INSPECTOR
+        [InlineButton("Select")]
+#endif
         public string Guid;
 #if ODIN_INSPECTOR
         [InlineButton("Remap")]
@@ -26,6 +29,18 @@ namespace VaporKeys
         public static KeyDropdownValue None => new (string.Empty, 0);
 
         [Conditional("UNITY_EDITOR")]
+        public void Select()
+        {
+#if UNITY_EDITOR
+            if (Guid != string.Empty)
+            {
+                var refVal = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObject>(UnityEditor.AssetDatabase.GUIDToAssetPath(Guid));
+                UnityEditor.Selection.activeObject = refVal;
+            }
+#endif
+        }
+
+        [Conditional("UNITY_EDITOR")]
         public void Remap()
         {
 #if UNITY_EDITOR
@@ -36,6 +51,7 @@ namespace VaporKeys
                 {
                     rfk.ForceRefreshKey();
                     Key = rfk.Key;
+                    UnityEditor.EditorUtility.SetDirty(refVal);
                 }
             }
 #endif
