@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Reflection;
 #if UNITY_EDITOR
 using UnityEditor;
-using System.Reflection;
 #endif
 #if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
@@ -52,7 +52,9 @@ namespace VaporKeys
 #endif
         public string TypeRebuild;
 
+#if ODIN_INSPECTOR
         [Button]
+#endif
         private void Rebuild()
         {
             var t = Type.GetType($"{TypeRebuild}");
@@ -61,7 +63,6 @@ namespace VaporKeys
             List<string> enumContent = new ();
             if(fiO is ValueDropdownList<KeyDropdownValue> vdl)
             {
-
                 foreach (var item in vdl)
                 {
                     enumContent.Add(item.Text);
