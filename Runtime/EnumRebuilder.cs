@@ -57,6 +57,8 @@ namespace VaporKeys
 #endif
         private void Rebuild()
         {
+#if UNITY_EDITOR
+#if ODIN_INSPECTOR
             var t = Type.GetType($"{TypeRebuild}");
             var fi = t.GetField("DropdownValues");
             var fiO = fi.GetValue(null);
@@ -85,6 +87,8 @@ namespace VaporKeys
             AssetDatabase.CreateAsset(def, $"{DefinitionPath}/{DefinitionName}.asset");
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+#endif
+#endif
         }
     }
 }
