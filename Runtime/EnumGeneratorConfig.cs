@@ -74,9 +74,9 @@ namespace VaporKeys
 #endif
         public OrderDirection orderDirection;
 #if ODIN_INSPECTOR
-        [Searchable, BoxGroup("Enum Properties")]
+        [BoxGroup("Enum Properties"), Searchable]
 #endif
-        public List<string> enumContent;
+        public List<string> enumContent = new();
 
 #if ODIN_INSPECTOR
         [PropertySpace, Button("Create")]
