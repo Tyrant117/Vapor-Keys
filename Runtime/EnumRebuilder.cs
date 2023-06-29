@@ -72,17 +72,15 @@ namespace VaporKeys
                 }
             }
 
-            ScriptableDefinition def = new()
-            {
-                folderPath = FolderPath,
-                namespaceName = NamespaceName,
-                definitionName = DefinitionName,
-                customOrder = CustomOrder,
-                startingValue = StartingValue,
-                orderDirection = (int)OrderDirection,
-                createNone = CreateNone,
-                enumContent = new List<string>(enumContent)
-            };
+            var def = ScriptableObject.CreateInstance<ScriptableDefinition>();
+            def.folderPath = FolderPath;
+            def.namespaceName = NamespaceName;
+            def.definitionName = DefinitionName;
+            def.customOrder = CustomOrder;
+            def.startingValue = StartingValue;
+            def.orderDirection = (int)OrderDirection;
+            def.createNone = CreateNone;
+            def.enumContent = new List<string>(enumContent);
 
             AssetDatabase.CreateAsset(def, $"{DefinitionPath}/{DefinitionName}.asset");
             AssetDatabase.SaveAssets();

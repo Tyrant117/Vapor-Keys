@@ -130,17 +130,15 @@ namespace VaporKeys
 
             KeyGenerator.FormatKeyFiles(folderPath, namespaceName, definitionName, kvp);
 
-            ScriptableDefinition def = new()
-            {
-                folderPath = folderPath,
-                namespaceName = namespaceName,
-                definitionName = definitionName,
-                customOrder = customOrder,
-                startingValue = startingValue,
-                orderDirection = (int)orderDirection,
-                createNone = createNone,
-                enumContent = new List<string>(enumContent)
-            };
+            var def = ScriptableObject.CreateInstance<ScriptableDefinition>();
+            def.folderPath = folderPath;
+            def.namespaceName = namespaceName;
+            def.definitionName = definitionName;
+            def.customOrder = customOrder;
+            def.startingValue = startingValue;
+            def.orderDirection = (int)orderDirection;
+            def.createNone = createNone;
+            def.enumContent = new List<string>(enumContent);
 
             AssetDatabase.CreateAsset(def, $"{definitionPath}/{definitionName}.asset");
 
