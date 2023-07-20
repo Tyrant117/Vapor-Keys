@@ -1,3 +1,6 @@
+# v2.0.2
+* Added auto generated string name for odin lookup.
+
 # v2.0.0
 * Major breaking changes.
 * Overhauled the key viewer and added a remapping system.

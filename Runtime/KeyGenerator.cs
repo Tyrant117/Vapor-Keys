@@ -416,6 +416,7 @@ namespace VaporKeys
 
 
             FormatFilePath(sb, $"{gameDataFilepath}");
+            FormatAttributeName(sb, $"@{scriptName}.DropdownValues");
 
             FormatEnum(sb, keys);
 
@@ -442,6 +443,11 @@ namespace VaporKeys
         private static void FormatFilePath(StringBuilder sb, string relativePath)
         {
             sb.Append($"\t\tpublic const string RELATIVE_PATH = \"{relativePath}\";\n");
+        }
+
+        private static void FormatAttributeName(StringBuilder sb, string relativePath)
+        {
+            sb.Append($"\t\tpublic const string AttributeName = \"{relativePath}\";\n");
         }
 
         private static void FormatEnum(StringBuilder sb, List<KeyValuePair> keys)
