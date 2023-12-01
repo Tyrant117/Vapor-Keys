@@ -1,6 +1,6 @@
 {
   "name": "com.carbonfibergames.vaporkeys",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "displayName": "Vapor Keys",
   "description": "Simple string and int key generator for enums and dropdowns.",
   "unity": "2021.3",

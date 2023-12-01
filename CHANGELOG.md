@@ -1,3 +1,6 @@
+# v3.0.1
+* Fixed removal of dependancies.
+
 # v3.0.0
 * Removed all dependancies on odin.
 
