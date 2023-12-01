@@ -1,3 +1,6 @@
+# v3.0.0
+* Removed all dependancies on odin.
+
 # v2.0.2
 * Added auto generated string name for odin lookup.
 

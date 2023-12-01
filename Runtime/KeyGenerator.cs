@@ -7,9 +7,6 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using System;
 using Object = UnityEngine.Object;
-#if ODIN_INSPECTOR
-using Sirenix.OdinInspector;
-#endif
 
 namespace VaporKeys
 {
@@ -172,26 +169,25 @@ namespace VaporKeys
             AssetDatabase.Refresh();
         }
 
-#if ODIN_INSPECTOR
-        public static void AddKey(Type type, string relativePath, ValueDropdownList<int> values, IKey keyToAdd)
+        public static void AddKey(Type type, string relativePath, List<(string, int)> values, IKey keyToAdd)
         {
             List<KeyValuePair> kvps = new();
             KeyValuePair newKvp = new(keyToAdd);
             foreach (var value in values)
             {
-                if (value.Value == newKvp.key)
+                if (value.Item2 == newKvp.key)
                 {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
+                    Debug.LogError($"Key Collision: {value.Item1}. Objects cannot share a name.");
                     return;
                 }
                 if (keyToAdd is Object so)
                 {
                     var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(so));
-                    kvps.Add(new(value.Text, value.Value, guid));
+                    kvps.Add(new(value.Item1, value.Item2, guid));
                 }
                 else
                 {
-                    kvps.Add(new(value.Text, value.Value, string.Empty));
+                    kvps.Add(new(value.Item1, value.Item2, string.Empty));
                 }
             }
             kvps.Add(newKvp);
@@ -199,25 +195,25 @@ namespace VaporKeys
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKey(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string keyToAdd)
+        public static void AddKey(Type type, string relativePath, List<(string, KeyDropdownValue)> values, string keyToAdd)
         {
             List<KeyValuePair> kvps = new();
             KeyValuePair newKvp = StringToKeyValuePair(keyToAdd);
             foreach (var value in values)
             {
-                if (value.Value.Key == newKvp.key)
+                if (value.Item2.Key == newKvp.key)
                 {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
+                    Debug.LogError($"Key Collision: {value.Item1}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value.Key, string.Empty));
+                kvps.Add(new(value.Item1, value.Item2.Key, string.Empty));
             }
             kvps.Add(newKvp);
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey[] keysToAdd)
+        public static void AddKeys(Type type, string relativePath, List<(string, KeyDropdownValue)> values, IKey[] keysToAdd)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> newKvps = new();
@@ -227,13 +223,13 @@ namespace VaporKeys
             }
             foreach (var value in values)
             {
-                bool match(KeyValuePair x) => x.key == value.Value.Key;
+                bool match(KeyValuePair x) => x.key == value.Item2.Key;
                 if (newKvps.Exists(match))
                 {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
+                    Debug.LogError($"Key Collision: {value.Item1}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
+                kvps.Add(new(value.Item1, value.Item2.Key, value.Item2.Guid));
             }
             foreach (var newKvp in newKvps)
             {
@@ -243,7 +239,7 @@ namespace VaporKeys
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void AddKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string[] keysToAdd)
+        public static void AddKeys(Type type, string relativePath, List<(string, KeyDropdownValue)> values, string[] keysToAdd)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> newKvps = new();
@@ -253,13 +249,13 @@ namespace VaporKeys
             }
             foreach (var value in values)
             {
-                bool match(KeyValuePair x) => x.key == value.Value.Key;
+                bool match(KeyValuePair x) => x.key == value.Item2.Key;
                 if (newKvps.Exists(match))
                 {
-                    Debug.LogError($"Key Collision: {value.Text}. Objects cannot share a name.");
+                    Debug.LogError($"Key Collision: {value.Item1}. Objects cannot share a name.");
                     return;
                 }
-                kvps.Add(new(value.Text, value.Value.Key, string.Empty));
+                kvps.Add(new(value.Item1, value.Item2.Key, string.Empty));
             }
             foreach (var newKvp in newKvps)
             {
@@ -269,37 +265,37 @@ namespace VaporKeys
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey keyToRemove)
+        public static void RemoveKey(Type type, string relativePath, List<(string, KeyDropdownValue)> values, IKey keyToRemove)
         {
             List<KeyValuePair> kvps = new();
             KeyValuePair removeKvp = new(keyToRemove);
             foreach (var value in values)
             {
-                if (value.Value.Key != removeKvp.key)
+                if (value.Item2.Key != removeKvp.key)
                 {
-                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
+                    kvps.Add(new(value.Item1, value.Item2.Key, value.Item2.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKey(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string keyToRemove)
+        public static void RemoveKey(Type type, string relativePath, List<(string, KeyDropdownValue)> values, string keyToRemove)
         {
             List<KeyValuePair> kvps = new();
             KeyValuePair removeKvp = StringToKeyValuePair(keyToRemove);
             foreach (var value in values)
             {
-                if (value.Value.Key != removeKvp.key)
+                if (value.Item2.Key != removeKvp.key)
                 {
-                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
+                    kvps.Add(new(value.Item1, value.Item2.Key, value.Item2.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey[] keysToRemove)
+        public static void RemoveKeys(Type type, string relativePath, List<(string, KeyDropdownValue)> values, IKey[] keysToRemove)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> removeKvps = new();
@@ -309,16 +305,16 @@ namespace VaporKeys
             }
             foreach (var value in values)
             {
-                if (!removeKvps.Exists(x => x.key == value.Value.Key))
+                if (!removeKvps.Exists(x => x.key == value.Item2.Key))
                 {
-                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
+                    kvps.Add(new(value.Item1, value.Item2.Key, value.Item2.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveKeys(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, string[] keysToRemove)
+        public static void RemoveKeys(Type type, string relativePath, List<(string, KeyDropdownValue)> values, string[] keysToRemove)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> removeKvps = new();
@@ -328,16 +324,16 @@ namespace VaporKeys
             }
             foreach (var value in values)
             {
-                if (!removeKvps.Exists(x => x.key == value.Value.Key))
+                if (!removeKvps.Exists(x => x.key == value.Item2.Key))
                 {
-                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
+                    kvps.Add(new(value.Item1, value.Item2.Key, value.Item2.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
 
-        public static void RemoveDeprecated(Type type, string relativePath, ValueDropdownList<KeyDropdownValue> values, IKey[] keysToRemove)
+        public static void RemoveDeprecated(Type type, string relativePath, List<(string, KeyDropdownValue)> values, IKey[] keysToRemove)
         {
             List<KeyValuePair> kvps = new();
             List<KeyValuePair> removeKvps = new();
@@ -350,41 +346,14 @@ namespace VaporKeys
             }
             foreach (var value in values)
             {
-                if (!removeKvps.Exists(x => x.key == value.Value.Key))
+                if (!removeKvps.Exists(x => x.key == value.Item2.Key))
                 {
-                    kvps.Add(new(value.Text, value.Value.Key, value.Value.Guid));
+                    kvps.Add(new(value.Item1, value.Item2.Key, value.Item2.Guid));
                 }
             }
 
             FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
         }
-#endif
-
-#if !ODIN_INSPECTOR
-        public static void AddKey(Type type, string relativePath, List<(string, int)> values, string name, int key)
-        {
-            List<KeyValuePair> kvps = new();
-            foreach (var value in values)
-            {
-                kvps.Add(new(value.Item1, value.Item2, string.Empty));
-            }
-            kvps.Add(new(name, key, string.Empty));
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-
-        public static void AddKey(Type type, string relativePath, List<(string, string)> values, string name, int key)
-        {
-            List<KeyValuePair> kvps = new();
-            foreach (var value in values)
-            {
-                kvps.Add(new(value.Item1, value.Item2.GetKeyHashCode(), string.Empty));
-            }
-            kvps.Add(new(name, key, string.Empty));
-
-            FormatKeyFiles(relativePath, type.Namespace, type.Name, kvps);
-        }
-#endif
 
         private static IEnumerable<T> GetAllAssets<T>(string[] guids) where T : Object
         {
@@ -404,7 +373,7 @@ namespace VaporKeys
 
 
             sb.Append("//\t* THIS SCRIPT IS AUTO-GENERATED *\n");
-            sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
+            //sb.Append("#if ODIN_INSPECTOR\n using Sirenix.OdinInspector;\n #endif\n");
             sb.Append("using System;\n");
             sb.Append("using VaporKeys;\n");
             sb.Append("using System.Collections.Generic;\n\n");
@@ -416,7 +385,8 @@ namespace VaporKeys
 
 
             FormatFilePath(sb, $"{gameDataFilepath}");
-            FormatAttributeName(sb, $"@{scriptName}.DropdownValues");
+            //FormatAttributeName(sb, $"@{scriptName}.DropdownValues");
+            FormatAttributeName(sb, $"{scriptName}");
 
             FormatEnum(sb, keys);
 
@@ -493,17 +463,17 @@ namespace VaporKeys
 
         private static void FormatOdinDropDown(StringBuilder sb, List<KeyValuePair> keys)
         {
-            sb.Append("#if ODIN_INSPECTOR\n");
-            sb.Append($"\t\tpublic static ValueDropdownList<KeyDropdownValue> DropdownValues = new()\n");
-            sb.Append("\t\t{\n");
-            for (int i = 0; i < keys.Count; i++)
-            {
-                sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", new (\"{keys[i].guid}\", {keys[i].variableName}) }},\n");
-            }
-            sb.Append("\t\t};\n");
-            sb.Append("#endif\n\n");
+            //sb.Append("#if ODIN_INSPECTOR\n");
+            //sb.Append($"\t\tpublic static ValueDropdownList<KeyDropdownValue> DropdownValues = new()\n");
+            //sb.Append("\t\t{\n");
+            //for (int i = 0; i < keys.Count; i++)
+            //{
+            //    sb.Append($"\t\t\t{{ \"{keys[i].displayName}\", new (\"{keys[i].guid}\", {keys[i].variableName}) }},\n");
+            //}
+            //sb.Append("\t\t};\n");
+            //sb.Append("#endif\n\n");
 
-            sb.Append("#if !ODIN_INSPECTOR\n");
+            //sb.Append("#if !ODIN_INSPECTOR\n");
             sb.Append($"\t\tpublic static List<(string, KeyDropdownValue)> DropdownValues = new()\n");
             sb.Append("\t\t{\n");
             for (int i = 0; i < keys.Count; i++)
@@ -511,7 +481,7 @@ namespace VaporKeys
                 sb.Append($"\t\t\tnew (\"{keys[i].displayName}\", new (\"{keys[i].guid}\", {keys[i].variableName})),\n");
             }
             sb.Append("\t\t};\n");
-            sb.Append("#endif\n\n");
+            //sb.Append("#endif\n\n");
         }
 
         private static void FormatList(StringBuilder sb, List<KeyValuePair> keys)
@@ -543,18 +513,18 @@ namespace VaporKeys
 
         private static void FormatLookup(StringBuilder sb)
         {
-            sb.Append("#if ODIN_INSPECTOR\n");
+            //sb.Append("#if ODIN_INSPECTOR\n");
 
-            sb.Append($"\t\tpublic static string Lookup(int id)\n");
-            sb.Append("\t\t{\n");
+            //sb.Append($"\t\tpublic static string Lookup(int id)\n");
+            //sb.Append("\t\t{\n");
 
-            sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value.Key == id).Text;\n");
+            //sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value.Key == id).Text;\n");
 
-            sb.Append("\t\t}\n");
+            //sb.Append("\t\t}\n");
 
-            sb.Append("#endif\n");
+            //sb.Append("#endif\n");
 
-            sb.Append("#if !ODIN_INSPECTOR\n");
+            //sb.Append("#if !ODIN_INSPECTOR\n");
 
             sb.Append($"\t\tpublic static string Lookup(int id)\n");
             sb.Append("\t\t{\n");
@@ -563,23 +533,23 @@ namespace VaporKeys
 
             sb.Append("\t\t}\n");
 
-            sb.Append("#endif\n");
+            //sb.Append("#endif\n");
         }
 
         private static void FormatGet(StringBuilder sb)
         {
-            sb.Append("#if ODIN_INSPECTOR\n");
+            //sb.Append("#if ODIN_INSPECTOR\n");
 
-            sb.Append($"\t\tpublic static KeyDropdownValue Get(int id)\n");
-            sb.Append("\t\t{\n");
+            //sb.Append($"\t\tpublic static KeyDropdownValue Get(int id)\n");
+            //sb.Append("\t\t{\n");
 
-            sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value.Key == id).Value;\n");
+            //sb.Append($"\t\t\treturn DropdownValues.Find((x) => x.Value.Key == id).Value;\n");
 
-            sb.Append("\t\t}\n");
+            //sb.Append("\t\t}\n");
 
-            sb.Append("#endif\n");
+            //sb.Append("#endif\n");
 
-            sb.Append("#if !ODIN_INSPECTOR\n");
+            //sb.Append("#if !ODIN_INSPECTOR\n");
 
             sb.Append($"\t\tpublic static KeyDropdownValue Get(int id)\n");
             sb.Append("\t\t{\n");
@@ -588,7 +558,7 @@ namespace VaporKeys
 
             sb.Append("\t\t}\n");
 
-            sb.Append("#endif\n");
+            //sb.Append("#endif\n");
         }
         #endregion
     }

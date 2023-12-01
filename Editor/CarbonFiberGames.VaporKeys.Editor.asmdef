@@ -1,0 +1,18 @@
+{
+    "name": "CarbonFiberGames.VaporKeys.Editor",
+    "rootNamespace": "VaporKeys.Editor",
+    "references": [
+        "GUID:3dbb5c21fc0b80b429c799d8d6557c74"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

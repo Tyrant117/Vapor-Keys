@@ -1,3 +1,6 @@
+#if ODIN_INSPECTOR
+using Sirenix.OdinInspector;
+#endif
 using System;
 using System.Diagnostics;
 using UnityEngine;
@@ -5,20 +8,26 @@ using UnityEngine;
 namespace VaporKeys
 {
     [System.Serializable]
-    public struct KeyDropdownValue : IEquatable<KeyDropdownValue>
+    public struct KeyDropdownValueOdin : IEquatable<KeyDropdownValueOdin>
     {
-        public static implicit operator int(KeyDropdownValue kdv) => kdv.Key;
+        public static implicit operator int(KeyDropdownValueOdin kdv) => kdv.Key;
 
+#if ODIN_INSPECTOR
+        [InlineButton("Select")]
+#endif
         public string Guid;
+#if ODIN_INSPECTOR
+        [InlineButton("Remap")]
+#endif
         public int Key;
 
-        public KeyDropdownValue(string guid, int key)
+        public KeyDropdownValueOdin(string guid, int key)
         {
             Guid = guid;
             Key = key;
         }
 
-        public static KeyDropdownValue None => new (string.Empty, 0);
+        public static KeyDropdownValueOdin None => new(string.Empty, 0);
 
         [Conditional("UNITY_EDITOR")]
         public void Select()
@@ -56,10 +65,10 @@ namespace VaporKeys
 
         public override bool Equals(object obj)
         {
-            return obj is KeyDropdownValue other && Equals(other);
+            return obj is KeyDropdownValueOdin other && Equals(other);
         }
 
-        public bool Equals(KeyDropdownValue other)
+        public bool Equals(KeyDropdownValueOdin other)
         {
             return Guid.Equals(other.Guid) && Key.Equals(other.Key);
         }

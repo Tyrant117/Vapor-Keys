@@ -1,0 +1,16 @@
+{
+    "name": "CarbonFiberGames.VaporKeys.Deprecated",
+    "rootNamespace": "",
+    "references": [
+        "GUID:3dbb5c21fc0b80b429c799d8d6557c74"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
