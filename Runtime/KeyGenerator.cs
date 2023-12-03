@@ -12,6 +12,12 @@ namespace VaporKeys
 {
     public class KeyGenerator
     {
+        public const string AbsoluteConfigPath = "Assets/Vapor Keys/Config";
+        public const string RelativeConfigPath = "Vapor Keys/Config";
+        public const string AbsoluteKeyPath = "Assets/Vapor Keys/Keys";
+        public const string RelativeKeyPath = "Vapor Keys/Keys";
+        public const string NamespaceName = "VaporKeyDefinitions";
+
         #region - Keys -
         public struct KeyValuePair
         {
@@ -83,7 +89,44 @@ namespace VaporKeys
         }
 
 #if UNITY_EDITOR
-        public static void GenerateKeys(string searchFilter, string gameDataFilepath, string namespaceName, string scriptName, bool includeNone)
+        public static void GenerateKeys(Type typeFilter, string scriptName, bool includeNone)
+        {
+            var guids = AssetDatabase.FindAssets($"t:{typeFilter.Name}");
+            HashSet<int> takenKeys = new();
+            List<KeyValuePair> formattedKeys = new();
+
+            if (includeNone)
+            {
+                takenKeys.Add(0);
+                formattedKeys.Add(new KeyValuePair("None", 0, string.Empty));
+            }
+
+            foreach (var item in GetAllAssets<Object>(guids))
+            {
+                if (item == null) { continue; }
+                if (item is not IKey key) { continue; }
+                if (key.IsDeprecated) { continue; }
+
+                key.ForceRefreshKey();
+                if (takenKeys.Contains(key.Key))
+                {
+                    Debug.LogError($"Key Collision: {item.name}. Objects cannot share a name.");
+                }
+                else
+                {
+                    EditorUtility.SetDirty(item);
+                    takenKeys.Add(key.Key);
+                    var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(item));
+                    formattedKeys.Add(new KeyValuePair(item.name, key.Key, guid));
+                }
+            }
+
+            FormatKeyFiles(RelativeKeyPath, NamespaceName, scriptName, formattedKeys);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        public static void GenerateKeys(string searchFilter, string scriptName, bool includeNone)
         {
             HashSet<int> takenKeys = new();
             List<KeyValuePair> formattedKeys = new();
@@ -122,19 +165,19 @@ namespace VaporKeys
                 }                
             }
 
-            FormatKeyFiles(gameDataFilepath, namespaceName, scriptName, formattedKeys);
+            FormatKeyFiles(RelativeKeyPath, NamespaceName, scriptName, formattedKeys);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
 
-        public static void GenerateKeys<T>(string gameDataFilepath, string namespaceName, string scriptName, bool includeNone) where T : ScriptableObject, IKey
+        public static void GenerateKeys<T>(string scriptName, bool includeNone) where T : ScriptableObject, IKey
         {
             string typeFilter = typeof(T).Name;
             Debug.Log($"Generating Keys of Type: {typeFilter}");
-            GenerateKeys<T>(AssetDatabase.FindAssets($"t:{typeFilter}"), gameDataFilepath, namespaceName, scriptName, includeNone);
+            GenerateKeys<T>(AssetDatabase.FindAssets($"t:{typeFilter}"), scriptName, includeNone);
         }
 
-        public static void GenerateKeys<T>(string[] guids, string gameDataFilepath, string namespaceName, string scriptName, bool includeNone) where T : ScriptableObject, IKey
+        public static void GenerateKeys<T>(string[] guids, string scriptName, bool includeNone) where T : ScriptableObject, IKey
         {
             HashSet<int> takenKeys = new();
             List<KeyValuePair> formattedKeys = new();
@@ -164,7 +207,7 @@ namespace VaporKeys
                 }
             }
 
-            FormatKeyFiles(gameDataFilepath, namespaceName, scriptName, formattedKeys);
+            FormatKeyFiles(RelativeKeyPath, NamespaceName, scriptName, formattedKeys);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }

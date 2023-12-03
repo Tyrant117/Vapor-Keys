@@ -74,6 +74,7 @@ namespace VaporKeys.Editor
             loadingBox.style.borderBottomLeftRadius = 3;
             loadingBox.style.borderBottomRightRadius = 3;
             loadingBox.style.paddingBottom = 3;
+            loadingBox.style.backgroundColor = new StyleColor(new Color(0.2509804f, 0.2509804f, 0.2509804f));
 
             var loadingHeader = new Label("Loading");
             loadingHeader.style.paddingLeft = 6;
@@ -118,6 +119,7 @@ namespace VaporKeys.Editor
             configBox.style.borderBottomLeftRadius = 3;
             configBox.style.borderBottomRightRadius = 3;
             configBox.style.paddingBottom = 3;
+            configBox.style.backgroundColor = new StyleColor(new Color(0.2509804f, 0.2509804f, 0.2509804f));
 
             var configHeader = new Label("Config");
             configHeader.style.paddingLeft = 6;

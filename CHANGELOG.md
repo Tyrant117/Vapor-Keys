@@ -1,3 +1,6 @@
+# v3.0.2
+* Updated ui and added odin option for drawing.
+
 # v3.0.1
 * Fixed removal of dependancies.
 
