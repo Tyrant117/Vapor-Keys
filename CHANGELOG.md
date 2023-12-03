@@ -1,3 +1,6 @@
+# v3.0.3
+* Removed unused using statements.
+
 # v3.0.2
 * Updated ui and added odin option for drawing.
 
